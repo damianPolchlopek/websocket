@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Gadu-Gadu Style</title>
+    <style>
+        /* Stylizacja okna chatu */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f2f2f2; /* Kolor tła */
+        }
+        .chat-container {
+            width: 300px;
+            background-color: #ffffff; /* Kolor tła okna chatu */
+            border: 1px solid #333; /* Obramowanie */
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Cień */
+        }
+        .chat-window {
+            height: 300px;
+            overflow-y: scroll;
+        }
+        .message {
+            background-color: #e6e6e6; /* Kolor wiadomości */
+            padding: 5px;
+            margin: 5px;
+        }
+
+        /* Stylizacja pola wprowadzania tekstu */
+        .text-input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <button id="connectButton" onclick="connectWithBroker()">Connect</button>
+    <input type="text" id="nick-input" placeholder="Twoj nick" >
+
+    <div class="chat-window" id="chat-window">
+        <div class="message">Inny użytkownik: Cześć!</div>
+        <div class="message">Ty: Hej, jak się masz?</div>
+    </div>
+    <input type="text" class="text-input" id="message-input" placeholder="Napisz wiadomość..." onkeydown="sendMessage(event)">
+</div>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
+<script>
+
+    var stompClient;
+    var nick;
+
+    // JavaScript do obsługi chatu
+    function sendMessage(event) {
+        if (event.key === 'Enter') {
+            const messageInput = document.getElementById('message-input');
+
+            const messageToSend = {
+                username: nick,
+                message: messageInput.value
+            }
+
+            stompClient.send("/app/send-message", {}, JSON.stringify(messageToSend));
+
+            messageInput.value = ''; // Wyczyść pole wprowadzania tekstu
+            // const chatWindow = document.getElementById('chat-window');
+            // chatWindow.scrollTop = chatWindow.scrollHeight; // Automatyczne przewijanie do ostatniej wiadomości
+        }
+    }
+
+    function onMessage(payload) {
+        console.log("OnMsg: " + payload)
+
+        const message = JSON.parse(payload.body);
+
+        // Dodaj nową wiadomość do okna chatu
+        const chatWindow = document.getElementById('chat-window');
+        chatWindow.innerHTML += '<div class="message">' + message.username + ': ' + message.message + '</div>';
+        chatWindow.scrollTop = chatWindow.scrollHeight; // Automatyczne przewijanie do ostatniej wiadomości
+    }
+
+    function onConnect() {
+        nick = document.getElementById('nick-input').value;
+        stompClient.subscribe('/topic/livechat', onMessage);
+    }
+
+    function onError() {
+
+    }
+
+    function connectWithBroker() {
+        var socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        console.log(stompClient)
+        stompClient.connect({}, onConnect, onError);
+    }
+
+
+</script>
+</body>
+</html>
